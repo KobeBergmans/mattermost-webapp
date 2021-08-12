@@ -7,6 +7,8 @@ import {convertEntityToCharacter} from 'utils/text_formatting';
 
 import RemoveMarkdown from 'utils/markdown/remove_markdown';
 
+import {markedInlineLatex} from 'utils/markdown/inlineLatex';
+
 import EmojiMap from 'utils/emoji_map';
 
 import Renderer from './renderer';
@@ -26,7 +28,9 @@ export function formatWithRenderer(text: string, renderer: marked.Renderer) {
         mangle: false,
     };
 
-    return marked(text, markdownOptions).trim();
+    const markedOut = marked(text, markdownOptions).trim();
+
+    return markedInlineLatex(markedOut);
 }
 
 export function stripMarkdown(text: string) {
