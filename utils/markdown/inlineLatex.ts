@@ -9,36 +9,46 @@ export function markedInlineLatex(markedIn: string): string {
 
     while (src.length > 0) {
         //Find text segments
-        const nextTextIndex = src.indexOf('<p>');
+        const startPIndex = src.indexOf('<p>');
 
-        if (nextTextIndex === -1) {
+        if (startPIndex === -1) {
             break;
         }
 
-        outHtml += src.slice(0, nextTextIndex);
-        src = src.slice(nextTextIndex);
+        outHtml += src.slice(0, startPIndex);
 
-        const startLatexIndex = src.indexOf('$');
-        if (startLatexIndex !== -1) {
-            const nextLatexIndex = src.indexOf('$', startLatexIndex + 1); //Start searching after the first index
+        const endPIndex = src.indexOf('</p>', startPIndex);
+        let inBlock = src.slice(startPIndex, endPIndex + '</p>'.length);
+        src = src.slice(endPIndex + '</p>'.length + 1); //Next iteration of outer loop goes on after this p segment
 
-            if (nextLatexIndex !== -1) {
-                const latexCode = src.slice(startLatexIndex + 1, nextLatexIndex);
-                const katexHtml = inlineLatexRenderer(latexCode);
+        //In Textblock modifying
+        let startLatexIndex = inBlock.indexOf('$');
+        while (startLatexIndex !== -1) {
+            const nextLatexIndex = inBlock.indexOf('$', startLatexIndex + 1); //Start searching after the first index
 
-                outHtml += src.slice(0, startLatexIndex);
-                outHtml += '</p>';
-                outHtml += katexHtml;
-
-                src = '<p>' + src.slice(nextLatexIndex + 1);
+            if (nextLatexIndex === -1) {
+                outHtml += inBlock;
+                break;
+            } else if (nextLatexIndex === startLatexIndex + 1) { //Don't render in latex if there is nothing in between the dollar signs. But only ignore the first dollar sign
+                outHtml += inBlock.slice(0, nextLatexIndex);
+                inBlock = inBlock.slice(nextLatexIndex);
+                startLatexIndex = inBlock.indexOf('$');
                 continue;
             }
+            const latexCode = inBlock.slice(startLatexIndex + 1, nextLatexIndex);
+            const katexHtml = inlineLatexRenderer(latexCode);
+
+            outHtml += inBlock.slice(0, startLatexIndex);
+            outHtml += katexHtml;
+            inBlock = inBlock.slice(nextLatexIndex + 1);
+
+            startLatexIndex = inBlock.indexOf('$');
         }
 
-        return outHtml + src;
+        outHtml += inBlock;
     }
 
-    return outHtml;
+    return outHtml + src;
 }
 
 function inlineLatexRenderer(code: string): string {
